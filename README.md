@@ -1,16 +1,47 @@
-# finanzas_moviles
+# Finanzas Móviles - Sistema de Gestión de Gastos
 
-A new Flutter project.
+Este proyecto es una aplicación móvil desarrollada en **Flutter** que permite la gestión de finanzas personales, cumpliendo con los requisitos de arquitectura limpia, persistencia de datos local y manejo de roles de usuario.
 
-## Getting Started
+## 🚀 Características del Proyecto
 
-This project is a starting point for a Flutter application.
+- **Registro de Usuarios:** Selección de roles (Administrador / Usuario Estándar).
+- **Autenticación Real:** Validación de credenciales mediante base de datos local.
+- **Persistencia de Datos:** Uso de SQLite para el almacenamiento de información.
+- **Gestión de Entorno:** Configuración de variables globales mediante archivos `.env`.
+- **Arquitectura:** Implementación de **Clean Architecture** y patrón **MVI** (Model-View-Intent).
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 🛠️ Stack Tecnológico
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Herramienta | Uso |
+|:--- |:--- |
+| **Flutter/Dart** | Framework de desarrollo UI |
+| **SQLite (sqflite)** | Base de Datos local (Persistencia) |
+| **flutter_dotenv** | Gestión de variables de entorno |
+| **Material 3** | Sistema de diseño de la interfaz |
+
+---
+
+## 🏗️ Arquitectura y Patrones
+
+El proyecto se divide en capas para asegurar la escalabilidad y el mantenimiento:
+
+1. **Capa de Dominio (`lib/domain`):** Contiene las entidades (`Usuario`, `Gasto`) y la lógica de negocio pura.
+2. **Capa de Datos (`lib/data`):** Implementación de repositorios y gestión de la base de datos local con `DatabaseHelper`.
+3. **Capa de Presentación (`lib/presentation`):** Pantallas (Screens) y manejo de estados (MVI).
+
+
+
+---
+
+## ⚙️ Configuración del Entorno
+
+Para ejecutar este proyecto, es necesario configurar las variables de entorno:
+
+1. Crear un archivo `.env` en la raíz del proyecto.
+2. Definir las siguientes variables:
+   ```env
+   APP_NAME=Finanzas Pro
+   DB_NAME=finanzas_moviles.db
+   DEBUG_MODE=true
