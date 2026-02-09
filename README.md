@@ -1,47 +1,34 @@
-# Finanzas Móviles - Sistema de Gestión de Gastos
+# Finanzas Móviles - Gestión y Onboarding
 
-Este proyecto es una aplicación móvil desarrollada en **Flutter** que permite la gestión de finanzas personales, cumpliendo con los requisitos de arquitectura limpia, persistencia de datos local y manejo de roles de usuario.
+Segunda fase del proyecto "Finanzas Móviles". Se ha implementado un flujo completo de bienvenida y un sistema de registro robusto con validaciones avanzadas bajo estándares de accesibilidad.
 
-## 🚀 Características del Proyecto
+## 🚀 Nuevas Implementaciones (Semana 8)
 
-- **Registro de Usuarios:** Selección de roles (Administrador / Usuario Estándar).
-- **Autenticación Real:** Validación de credenciales mediante base de datos local.
-- **Persistencia de Datos:** Uso de SQLite para el almacenamiento de información.
-- **Gestión de Entorno:** Configuración de variables globales mediante archivos `.env`.
-- **Arquitectura:** Implementación de **Clean Architecture** y patrón **MVI** (Model-View-Intent).
+### 1. Flujo de Onboarding
+- Implementación de **PageView** con 3 pantallas informativas.
+- Navegación controlada con opciones de "Saltar" y "Siguiente".
+- Redirección inteligente al formulario de registro.
 
----
+### 2. Validaciones Complejas y Accesibilidad
+- **Validación de Formato:** Uso de `RegExp` para correos y bloqueo de caracteres numéricos en nombres mediante `inputFormatters`.
+- **Validación Cruzada:** Comparación en tiempo real de contraseñas (Password match).
+- **Feedback Accesible:** Mensajes de error claros que no dependen únicamente del color, integrando iconos y texto descriptivo (WCAG 2.2).
+- **Controladores:** Gestión de estado mediante `TextEditingController` con limpieza de memoria activa (`dispose`).
 
-## 🛠️ Stack Tecnológico
-
-| Herramienta | Uso |
-|:--- |:--- |
-| **Flutter/Dart** | Framework de desarrollo UI |
-| **SQLite (sqflite)** | Base de Datos local (Persistencia) |
-| **flutter_dotenv** | Gestión de variables de entorno |
-| **Material 3** | Sistema de diseño de la interfaz |
+### 3. Persistencia y Seguridad
+- Las validaciones aseguran que solo datos íntegros se almacenen en la base de datos **SQLite**.
+- Uso de **Debounce** para optimizar las validaciones asíncronas de campos únicos.
 
 ---
 
-## 🏗️ Arquitectura y Patrones
+## 🏗️ Arquitectura
+El proyecto sigue los principios de **Clean Architecture** y el patrón **MVI**, separando las responsabilidades de datos, lógica de negocio y UI.
 
-El proyecto se divide en capas para asegurar la escalabilidad y el mantenimiento:
-
-1. **Capa de Dominio (`lib/domain`):** Contiene las entidades (`Usuario`, `Gasto`) y la lógica de negocio pura.
-2. **Capa de Datos (`lib/data`):** Implementación de repositorios y gestión de la base de datos local con `DatabaseHelper`.
-3. **Capa de Presentación (`lib/presentation`):** Pantallas (Screens) y manejo de estados (MVI).
-
-
+## 🛠️ Instalación y Uso
+1. Asegúrese de tener el archivo `.env` configurado.
+2. Ejecute `flutter pub get` para instalar Riverpod y las nuevas dependencias de validación.
+3. Inicie el simulador y ejecute `flutter run`.
 
 ---
-
-## ⚙️ Configuración del Entorno
-
-Para ejecutar este proyecto, es necesario configurar las variables de entorno:
-
-1. Crear un archivo `.env` en la raíz del proyecto.
-2. Definir las siguientes variables:
-   ```env
-   APP_NAME=Finanzas Pro
-   DB_NAME=finanzas_moviles.db
-   DEBUG_MODE=true
+**Desarrollado por:** Santiago
+**Curso:** Desarrollo de Aplicaciones Móviles - 2026

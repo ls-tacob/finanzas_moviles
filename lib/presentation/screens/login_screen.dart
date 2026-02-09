@@ -11,25 +11,26 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controladores para capturar el texto ingresado
+  // 1. Llave global para el formulario y controladores
+  final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
   final _passController = TextEditingController();
-  bool _isLoading = false; // Para mostrar un indicador de carga si deseas
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    // Es vital liberar la memoria de los controladores al cerrar la pantalla
     _correoController.dispose();
     _passController.dispose();
     super.dispose();
   }
 
-  // Función para manejar la lógica de entrada
   Future<void> _handleLogin() async {
+    // 2. Solo procede si el formulario es válido
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
     final repo = AuthRepositoryImpl();
-    // Buscamos en la base de datos local SQLite
     bool esValido = await repo.validarLogin(
       _correoController.text.trim(),
       _passController.text.trim(),
@@ -39,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (esValido) {
       if (mounted) {
-        // Navegamos al Home y eliminamos el Login del historial
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -51,6 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(
             content: Text('Correo o contraseña incorrectos'),
             backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating, // Se ve más moderno
           ),
         );
       }
@@ -68,63 +69,88 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const FlutterLogo(size: 80), // Un toque visual simple
-                const SizedBox(height: 40),
+            // 3. Envolvemos todo en el Form
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const FlutterLogo(size: 80),
+                  const SizedBox(height: 40),
 
-                TextField(
-                  controller: _correoController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo Electrónico',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
+                  // --- CAMPO CORREO ---
+                  TextFormField(
+                    controller: _correoController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo Electrónico',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(),
+                      hintText: 'ejemplo@correo.com',
+                    ),
+                    // Validación de campo vacío y formato
+                    validator: (val) {
+                      if (val == null || val.isEmpty)
+                        return "El correo es requerido";
+                      if (!val.contains('@') || !val.contains('.')) {
+                        return "Ingresa un correo válido";
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                TextField(
-                  controller: _passController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
+                  // --- CAMPO CONTRASEÑA ---
+                  TextFormField(
+                    controller: _passController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Contraseña',
+                      prefixIcon: Icon(Icons.lock),
+                      border: OutlineInputBorder(),
+                    ),
+                    // Validación de campo vacío
+                    validator: (val) {
+                      if (val == null || val.isEmpty)
+                        return "La contraseña es requerida";
+                      if (val.length < 6) return "Mínimo 6 caracteres";
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _handleLogin,
-                          child: const Text(
-                            'INGRESAR',
-                            style: TextStyle(fontSize: 16),
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _handleLogin,
+                            child: const Text(
+                              'INGRESAR',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 15),
 
-                TextButton(
-                  onPressed: () {
-                    // Navegamos a la pantalla de Registro que ya creaste
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('¿No tienes cuenta? Regístrate aquí'),
-                ),
-              ],
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('¿No tienes cuenta? Regístrate aquí'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

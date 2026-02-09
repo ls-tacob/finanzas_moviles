@@ -1,3 +1,4 @@
+import 'package:finanzas_moviles/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/screens/login_screen.dart'; // Importa el Login
@@ -22,7 +23,7 @@ class FinanzasApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginScreen(), // Arrancamos aquí
+      home: const OnboardingScreen(), // Arrancamos aquí
     );
   }
 }

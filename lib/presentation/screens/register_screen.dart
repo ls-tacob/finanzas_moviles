@@ -1,105 +1,163 @@
-import 'package:finanzas_moviles/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
-// IMPORTANTE: Asegúrate de que esta ruta sea la correcta según tu carpeta
-import '../../data/repositories/auth_repository_impl.dart';
+import 'package:flutter/services.dart'; // Para el filtro de no números
+import 'dart:async';
+import 'home_screen.dart';
+import 'login_screen.dart';
+import 'onboarding_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final List<String> _roles = ['Usuario Estándar', 'Administrador'];
-  String _selectedRole = 'Usuario Estándar';
+  final _formKey = GlobalKey<FormState>();
 
-  // Controladores para capturar el texto
+  // 1. TODOS LOS CONTROLADORES DEFINIDOS AQUÍ
   final _nombreController = TextEditingController();
   final _correoController = TextEditingController();
   final _passController = TextEditingController();
+  final _confirmPassController = TextEditingController();
+
+  bool _isEmailChecking = false;
 
   @override
   void dispose() {
-    // Es buena práctica limpiar los controladores al cerrar la pantalla
+    // 2. LIMPIEZA DE MEMORIA
     _nombreController.dispose();
     _correoController.dispose();
     _passController.dispose();
+    _confirmPassController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registro - Finanzas Móviles')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(title: const Text("Registro de Usuario")),
+      body: Form(
+        key: _formKey,
         child: SingleChildScrollView(
-          // Añadido por si el teclado tapa los campos
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Quitamos el 'const' y añadimos el 'controller'
-              TextField(
+              // --- CAMPO NOMBRE ---
+              TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              TextField(
-                controller: _correoController,
-                decoration: const InputDecoration(labelText: 'Correo'),
-              ),
-              TextField(
-                controller: _passController,
-                decoration: const InputDecoration(labelText: 'Contraseña'),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedRole,
-                items: _roles
-                    .map(
-                      (role) =>
-                          DropdownMenuItem(value: role, child: Text(role)),
-                    )
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedRole = val!),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                ],
                 decoration: const InputDecoration(
-                  labelText: 'Selecciona tu Rol',
+                  labelText: "Nombres",
+                  icon: Icon(Icons.person),
+                  hintText: "Solo letras",
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty)
+                    return "El nombre es obligatorio";
+                  if (val.length < 3) return "Nombre demasiado corto";
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO CORREO ---
+              TextFormField(
+                controller: _correoController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: "Correo Electrónico",
+                  icon: const Icon(Icons.email),
+                  suffixIcon: _isEmailChecking
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return "Ingrese un correo";
+                  if (!val.contains('@')) return "Formato de correo incorrecto";
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO CONTRASEÑA ---
+              TextFormField(
+                controller: _passController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: "Contraseña",
+                  icon: Icon(Icons.lock),
+                ),
+                validator: (val) {
+                  if (val == null || val.length < 8)
+                    return "Mínimo 8 caracteres";
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO CONFIRMAR ---
+              TextFormField(
+                controller: _confirmPassController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: "Confirmar Contraseña",
+                  icon: Icon(Icons.security),
+                ),
+                validator: (val) {
+                  if (val != _passController.text)
+                    return "Las contraseñas no coinciden";
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 30),
+
+              // --- BOTÓN REGISTRARSE ---
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("¡Registro exitoso!")),
+                      );
+                      // Aquí podrías navegar al Home
+                    }
+                  },
+                  child: const Text("REGISTRARSE"),
                 ),
               ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () async {
-                  final repo = AuthRepositoryImpl();
 
-                  // 1. Guardamos en la base de datos
-                  await repo.registrarUsuario(
-                    _nombreController.text,
-                    _correoController.text,
-                    _passController.text,
-                    _selectedRole,
-                  );
+              const SizedBox(height: 20),
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '¡Bienvenido ${_nombreController.text}! Sesión iniciada como $_selectedRole',
-                        ),
-                      ),
-                    );
-
-                    // 2. NAVEGACIÓN DIRECTA AL HOME
-                    // Usamos pushAndRemoveUntil para que el usuario no pueda darle "atrás" y volver al registro
-                    Navigator.pushAndRemoveUntil(
+              // --- BOTONES DE NAVEGACIÓN INFERIOR ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
+                        builder: (_) => const OnboardingScreen(),
                       ),
-                      (route) => false, // Esto borra el historial de pantallas
-                    );
-                  }
-                },
-                child: const Text('Registrarse'),
+                    ),
+                    child: const Text("← Volver al inicio"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    ),
+                    child: const Text("Ya tengo cuenta"),
+                  ),
+                ],
               ),
             ],
           ),
