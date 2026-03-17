@@ -1,3 +1,4 @@
+import 'package:finanzas_moviles/data/repositories/auth_repository_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para el filtro de no números
 import 'dart:async';
@@ -123,12 +124,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    // Asegúrate de que no haya nada entre 'onPressed:' y '() async {'
                     if (_formKey.currentState!.validate()) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("¡Registro exitoso!")),
-                      );
-                      // Aquí podrías navegar al Home
+                      try {
+                        // 1. Instanciamos tu repositorio
+                        final authRepo = AuthRepositoryImpl();
+
+                        // 2. Intentamos registrar al usuario
+                        await authRepo.registrarUsuario(
+                          _nombreController.text.trim(),
+                          _correoController.text.trim(),
+                          _passController.text.trim(),
+                          'usuario',
+                        );
+
+                        // 3. Si todo sale bien, avisamos y navegamos
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("¡Usuario registrado localmente!"),
+                            ),
+                          );
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        // Por si algo falla en la base de datos
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Error al guardar: $e")),
+                          );
+                        }
+                      }
                     }
                   },
                   child: const Text("REGISTRARSE"),

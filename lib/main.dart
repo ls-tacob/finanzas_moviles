@@ -1,15 +1,16 @@
+import 'package:finanzas_moviles/data/services/api_service.dart';
 import 'package:finanzas_moviles/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/screens/login_screen.dart'; // Importa el Login
 import 'data/local/database_helper.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await DatabaseHelper().database;
   runApp(const FinanzasApp());
 }
+
 
 class FinanzasApp extends StatelessWidget {
   const FinanzasApp({super.key});

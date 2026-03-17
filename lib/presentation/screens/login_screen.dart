@@ -1,3 +1,4 @@
+import 'package:finanzas_moviles/presentation/screens/opportunities_screen.dart';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
@@ -40,9 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (esValido) {
       if (mounted) {
-        Navigator.pushReplacement(
+       Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => OpportunitiesScreen()),
         );
       }
     } else {
