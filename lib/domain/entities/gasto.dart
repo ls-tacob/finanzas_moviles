@@ -4,6 +4,7 @@ class Gasto {
   final DateTime fecha;
   final String nota;
   final String categoriaId;
+  final String? fotoPath; // AGREGAMOS ESTA LÍNEA
 
   Gasto({
     required this.id,
@@ -11,5 +12,6 @@ class Gasto {
     required this.fecha,
     required this.nota,
     required this.categoriaId,
+    this.fotoPath, // AGREGAMOS ESTO TAMBIÉN
   });
 }

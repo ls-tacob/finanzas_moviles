@@ -14,23 +14,23 @@ class DatabaseHelper {
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
+Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'finanzas.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // 1. CAMBIAMOS LA VERSIÓN A 2
       onCreate: (db, version) async {
-        // Creamos la tabla de gastos según tu diseño
         await db.execute('''
           CREATE TABLE gastos (
             id TEXT PRIMARY KEY,
             monto REAL,
             fecha TEXT,
             nota TEXT,
-            categoriaId TEXT
+            categoriaId TEXT,
+            foto_path TEXT -- 2. AGREGAMOS ESTA COLUMNA
           )
         ''');
-        // Tabla de roles/usuarios para el registro
+
         await db.execute('''
           CREATE TABLE usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +40,12 @@ class DatabaseHelper {
             rol TEXT
           )
         ''');
+      },
+      // 3. AGREGAMOS ESTE BLOQUE PARA ACTUALIZAR SI YA EXISTÍA LA TABLA
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE gastos ADD COLUMN foto_path TEXT');
+        }
       },
     );
   }

@@ -30,19 +30,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite: ^2.3.0        # Para la base de datos SQLite
-  path: ^1.8.3           # Para manejar rutas de archivos
-  flutter_dotenv: ^5.1.0 # Para las variables de entorno (.env)
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  flutter_dotenv: ^5.1.0
+  camera: ^0.11.0
+  image_picker: ^1.0.7
+  path_provider: ^2.1.0
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.2.1
   http: ^1.6.0
+  permission_handler: ^11.3.1  # Añade esta línea
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+    
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

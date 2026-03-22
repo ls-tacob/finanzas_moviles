@@ -1,36 +1,57 @@
-import '../local/database_helper.dart';
+import 'dart:convert';
+import 'package:finanzas_moviles/core/constants.dart';
+import 'package:http/http.dart' as http;
+
 
 class AuthRepositoryImpl {
-  final _dbHelper = DatabaseHelper();
-
-  // Esta es la función que te marcaba error
-  Future<int> registrarUsuario(
-    String nombre,
+  // LOGIN
+  Future<Map<String, dynamic>?> validarLogin(
     String correo,
     String password,
-    String rol,
   ) async {
-    final db = await _dbHelper.database;
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.login), // <--- USA LA CONSTANTE
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"correo": correo, "password": password}),
+      );
 
-    // Insertamos en la tabla 'usuarios'
-    return await db.insert('usuarios', {
-      'nombre': nombre,
-      'correo': correo,
-      'password': password,
-      'rol': rol,
-    });
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      throw Exception("Error de conexión: $e");
+    }
   }
 
-  // Esta sirve para el Login
-  Future<bool> validarLogin(String correo, String password) async {
-    final db = await _dbHelper.database;
+  // REGISTRO
+  Future<bool> registrarUsuario(Map<String, dynamic> userData) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          ApiEndpoints.register,
+        ), // <--- AQUÍ ESTABA TU ERROR (Cannot POST /)
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode(userData),
+      );
 
-    final List<Map<String, dynamic>> maps = await db.query(
-      'usuarios',
-      where: 'correo = ? AND password = ?',
-      whereArgs: [correo, password],
-    );
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        final errorData = jsonDecode(response.body);
+        // Manejo de errores de NestJS (puede ser String o List)
+        String message = errorData['message'] is List
+            ? errorData['message'][0]
+            : errorData['message'];
 
-    return maps.isNotEmpty;
+        throw Exception(message ?? "Error en el servidor");
+      }
+    } catch (e) {
+      throw Exception("Fallo en el registro: $e");
+    }
   }
 }

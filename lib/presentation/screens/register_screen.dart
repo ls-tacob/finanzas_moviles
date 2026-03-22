@@ -1,8 +1,6 @@
 import 'package:finanzas_moviles/data/repositories/auth_repository_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para el filtro de no números
-import 'dart:async';
-import 'home_screen.dart';
+import 'package:flutter/services.dart';
 import 'login_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -15,21 +13,26 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // 1. TODOS LOS CONTROLADORES DEFINIDOS AQUÍ
+  // CONTROLADORES ACTUALIZADOS PARA ORACLE
+  final _cedulaController = TextEditingController();
   final _nombreController = TextEditingController();
+  final _apellidoController = TextEditingController();
   final _correoController = TextEditingController();
   final _passController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final _sueldoController = TextEditingController();
 
-  bool _isEmailChecking = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    // 2. LIMPIEZA DE MEMORIA
+    _cedulaController.dispose();
     _nombreController.dispose();
+    _apellidoController.dispose();
     _correoController.dispose();
     _passController.dispose();
     _confirmPassController.dispose();
+    _sueldoController.dispose();
     super.dispose();
   }
 
@@ -43,7 +46,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // --- CAMPO NOMBRE ---
+              // --- CAMPO CÉDULA (PK EN ORACLE) ---
+              TextFormField(
+                controller: _cedulaController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: "Cédula",
+                  icon: Icon(Icons.badge),
+                  hintText: "10 dígitos",
+                ),
+                validator: (val) => (val == null || val.length != 10)
+                    ? "La cédula debe tener 10 dígitos"
+                    : null,
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO NOMBRES ---
               TextFormField(
                 controller: _nombreController,
                 inputFormatters: [
@@ -52,14 +71,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(
                   labelText: "Nombres",
                   icon: Icon(Icons.person),
-                  hintText: "Solo letras",
                 ),
-                validator: (val) {
-                  if (val == null || val.isEmpty)
-                    return "El nombre es obligatorio";
-                  if (val.length < 3) return "Nombre demasiado corto";
-                  return null;
-                },
+                validator: (val) =>
+                    (val == null || val.isEmpty) ? "Campo obligatorio" : null,
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO APELLIDOS ---
+              TextFormField(
+                controller: _apellidoController,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                ],
+                decoration: const InputDecoration(
+                  labelText: "Apellidos",
+                  icon: Icon(Icons.person_outline),
+                ),
+                validator: (val) =>
+                    (val == null || val.isEmpty) ? "Campo obligatorio" : null,
               ),
               const SizedBox(height: 15),
 
@@ -67,22 +96,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _correoController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Correo Electrónico",
-                  icon: const Icon(Icons.email),
-                  suffixIcon: _isEmailChecking
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
+                  icon: Icon(Icons.email),
                 ),
                 validator: (val) {
                   if (val == null || val.isEmpty) return "Ingrese un correo";
                   if (!val.contains('@')) return "Formato de correo incorrecto";
                   return null;
                 },
+              ),
+              const SizedBox(height: 15),
+
+              // --- CAMPO SUELDO (OPCIONAL PERO ÚTIL) ---
+              TextFormField(
+                controller: _sueldoController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: "Sueldo Mensual",
+                  icon: Icon(Icons.attach_money),
+                ),
               ),
               const SizedBox(height: 15),
 
@@ -94,11 +129,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: "Contraseña",
                   icon: Icon(Icons.lock),
                 ),
-                validator: (val) {
-                  if (val == null || val.length < 8)
-                    return "Mínimo 8 caracteres";
-                  return null;
-                },
+                validator: (val) => (val == null || val.length < 8)
+                    ? "Mínimo 8 caracteres"
+                    : null,
               ),
               const SizedBox(height: 15),
 
@@ -110,11 +143,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: "Confirmar Contraseña",
                   icon: Icon(Icons.security),
                 ),
-                validator: (val) {
-                  if (val != _passController.text)
-                    return "Las contraseñas no coinciden";
-                  return null;
-                },
+                validator: (val) => (val != _passController.text)
+                    ? "Las contraseñas no coinciden"
+                    : null,
               ),
 
               const SizedBox(height: 30),
@@ -124,53 +155,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    // Asegúrate de que no haya nada entre 'onPressed:' y '() async {'
-                    if (_formKey.currentState!.validate()) {
-                      try {
-                        // 1. Instanciamos tu repositorio
-                        final authRepo = AuthRepositoryImpl();
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          if (_formKey.currentState!.validate()) {
+                            setState(() => _isLoading = true);
+                            try {
+                              final authRepo = AuthRepositoryImpl();
 
-                        // 2. Intentamos registrar al usuario
-                        await authRepo.registrarUsuario(
-                          _nombreController.text.trim(),
-                          _correoController.text.trim(),
-                          _passController.text.trim(),
-                          'usuario',
-                        );
+                              // MAPEADO 1:1 CON EL DTO DE NESTJS
+                              final success = await authRepo.registrarUsuario({
+                                "cedula": _cedulaController.text.trim(),
+                                "nombres": _nombreController.text.trim(),
+                                "apellidos": _apellidoController.text.trim(),
+                                "idRol": 1, // ID que insertamos en ROL
+                                "correo": _correoController.text.trim(),
+                                "password": _passController.text.trim(),
+                                "sueldoActual":
+                                    double.tryParse(_sueldoController.text) ??
+                                    0.0,
+                              });
 
-                        // 3. Si todo sale bien, avisamos y navegamos
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("¡Usuario registrado localmente!"),
-                            ),
-                          );
-
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        // Por si algo falla en la base de datos
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error al guardar: $e")),
-                          );
-                        }
-                      }
-                    }
-                  },
-                  child: const Text("REGISTRARSE"),
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "¡Usuario registrado en el sistema!",
+                                    ),
+                                  ),
+                                );
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Error: $e")),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => _isLoading = false);
+                            }
+                          }
+                        },
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("REGISTRARSE"),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // --- BOTONES DE NAVEGACIÓN INFERIOR ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -181,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         builder: (_) => const OnboardingScreen(),
                       ),
                     ),
-                    child: const Text("← Volver al inicio"),
+                    child: const Text("← Volver"),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pushReplacement(

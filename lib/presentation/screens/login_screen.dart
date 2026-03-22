@@ -1,8 +1,7 @@
-import 'package:finanzas_moviles/presentation/screens/opportunities_screen.dart';
 import 'package:flutter/material.dart';
+import '../../data/repositories/auth_repository_impl.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +11,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 1. Llave global para el formulario y controladores
   final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
   final _passController = TextEditingController();
@@ -26,131 +24,121 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    // 2. Solo procede si el formulario es válido
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    final repo = AuthRepositoryImpl();
-    bool esValido = await repo.validarLogin(
-      _correoController.text.trim(),
-      _passController.text.trim(),
-    );
+    try {
+      final repo = AuthRepositoryImpl();
+      final userData = await repo.validarLogin(
+        _correoController.text.trim(),
+        _passController.text.trim(),
+      );
 
-    setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-    if (esValido) {
-      if (mounted) {
-       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => OpportunitiesScreen()),
-        );
-      }
-    } else {
-      if (mounted) {
+      if (userData != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Correo o contraseña incorrectos'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating, // Se ve más moderno
+          SnackBar(
+content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgroundColor: Colors.green,
           ),
         );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else if (mounted) {
+        _showError('Credenciales incorrectas');
       }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) _showError('No se pudo conectar al servidor');
     }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ingreso - Finanzas Móviles'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: SingleChildScrollView(
-            // 3. Envolvemos todo en el Form
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const FlutterLogo(size: 80),
-                  const SizedBox(height: 40),
-
-                  // --- CAMPO CORREO ---
-                  TextFormField(
-                    controller: _correoController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Correo Electrónico',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
-                      hintText: 'ejemplo@correo.com',
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.lock_person,
+                      size: 80,
+                      color: Colors.blueAccent,
                     ),
-                    // Validación de campo vacío y formato
-                    validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return "El correo es requerido";
-                      if (!val.contains('@') || !val.contains('.')) {
-                        return "Ingresa un correo válido";
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- CAMPO CONTRASEÑA ---
-                  TextFormField(
-                    controller: _passController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Ingreso al Sistema",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    // Validación de campo vacío
-                    validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return "La contraseña es requerida";
-                      if (val.length < 6) return "Mínimo 6 caracteres";
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _handleLogin,
-                            child: const Text(
-                              'INGRESAR',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    const SizedBox(height: 40),
+                    TextFormField(
+                      controller: _correoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      validator: (val) => (val == null || !val.contains('@'))
+                          ? "Correo inválido"
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      validator: (val) => (val == null || val.length < 6)
+                          ? "Mínimo 6 caracteres"
+                          : null,
+                    ),
+                    const SizedBox(height: 24),
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _handleLogin,
+                              child: const Text("ENTRAR"),
                             ),
                           ),
-                        ),
-
-                  const SizedBox(height: 15),
-
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const RegisterScreen(),
                         ),
-                      );
-                    },
-                    child: const Text('¿No tienes cuenta? Regístrate aquí'),
-                  ),
-                ],
+                      ),
+                      child: const Text("¿No tienes cuenta? Regístrate"),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
