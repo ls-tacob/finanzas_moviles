@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../data/repositories/auth_repository_impl.dart';
+// 1. IMPORTA EL SERVICIO, NO EL REPOSITORIO DIRECTAMENTE
+import '../../data/services/auth_service.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
@@ -14,7 +15,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
   final _passController = TextEditingController();
+
+  // 2. INSTANCIA EL SERVICIO
+  final _authService = AuthService();
   bool _isLoading = false;
+  bool _obscureText = true;
+
 
   @override
   void dispose() {
@@ -29,20 +35,23 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final repo = AuthRepositoryImpl();
-      final userData = await repo.validarLogin(
+      // 3. USA EL SERVICIO (que ya guarda el token internamente)
+      final success = await _authService.login(
         _correoController.text.trim(),
         _passController.text.trim(),
       );
 
-      setState(() => _isLoading = false);
+      if (success && mounted) {
+        // 4. RECUPERA EL USUARIO DEL SERVICIO PARA EL SALUDO
+        final user = _authService.currentUser;
 
-      if (userData != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgroundColor: Colors.green,
+            content: Text('Bienvenido, ${user?.nombres ?? 'Usuario'}'),
+            backgroundColor: Colors.green,
           ),
         );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -51,8 +60,10 @@ content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgrou
         _showError('Credenciales incorrectas');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) _showError('No se pudo conectar al servidor');
+      if (mounted)
+        _showError('Error: ${e.toString().replaceAll("Exception: ", "")}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -68,6 +79,8 @@ content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgrou
 
   @override
   Widget build(BuildContext context) {
+    // ... El resto de tu UI (Scaffold, Form, Column) se mantiene igual
+    // Solo asegúrate de que el botón llame a _handleLogin como ya lo hace.
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -94,6 +107,7 @@ content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgrou
                     const SizedBox(height: 40),
                     TextFormField(
                       controller: _correoController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Correo',
                         border: OutlineInputBorder(),
@@ -104,18 +118,31 @@ content: Text('Bienvenido, ${userData['user']['nombres']}'),            backgrou
                           : null,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Contraseña',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                      validator: (val) => (val == null || val.length < 6)
-                          ? "Mínimo 6 caracteres"
-                          : null,
-                    ),
+                    // 1. Agrega esta variable al inicio de tu _LoginScreenState
+// 2. Modifica el TextFormField de la contraseña:
+TextFormField(
+  controller: _passController,
+  obscureText: _obscureText, // Usa la variable aquí
+  decoration: InputDecoration(
+    labelText: 'Contraseña',
+    border: const OutlineInputBorder(),
+    prefixIcon: const Icon(Icons.lock),
+    // AGREGA ESTO:
+    suffixIcon: IconButton(
+      icon: Icon(
+        _obscureText ? Icons.visibility_off : Icons.visibility,
+      ),
+      onPressed: () {
+        setState(() {
+          _obscureText = !_obscureText;
+        });
+      },
+    ),
+  ),
+  validator: (val) => (val == null || val.length < 6)
+      ? "Mínimo 6 caracteres"
+      : null,
+),
                     const SizedBox(height: 24),
                     _isLoading
                         ? const CircularProgressIndicator()
