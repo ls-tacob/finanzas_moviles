@@ -4,6 +4,10 @@ import '../repositories/auth_repository_impl.dart';
 import '../../core/session_manager.dart';
 
 class AuthService {
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+  
   final AuthRepositoryImpl _repository = AuthRepositoryImpl();
   final SessionManager _sessionManager = SessionManager();
 
@@ -13,23 +17,29 @@ class AuthService {
   // 2. Getter público para que la UI pueda leerlo
   UserModel? get currentUser => _currentUser;
 
- // lib/data/services/auth_service.dart
-
-  Future<bool> login(String correo, String password) async {
+Future<bool> login(String correo, String password) async {
     try {
-      // Aquí recibes el MAP: { 'user': UserModel, 'token': String }
       final result = await _repository.validarLogin(correo, password);
 
       if (result != null) {
-        // CORRECCIÓN: Extraer explícitamente el objeto que ya es un UserModel
-        _currentUser = result['user'] as UserModel; // El cast asegura el tipo
-        final String token = result['token'] as String;
+        // Si el repositorio ya devuelve el objeto UserModel, solo asígnalo.
+        // Si el repositorio devuelve un MAP, entonces usa UserModel.fromJson(result['user']).
 
+        final dynamic userData = result['user'];
+
+        if (userData is UserModel) {
+          _currentUser = userData;
+        } else {
+          _currentUser = UserModel.fromJson(userData as Map<String, dynamic>);
+        }
+
+        final String token = result['token'] as String;
         await _sessionManager.saveSession(token, _currentUser!);
         return true;
       }
       return false;
     } catch (e) {
+      print("Error en AuthService Login: $e");
       rethrow;
     }
   }

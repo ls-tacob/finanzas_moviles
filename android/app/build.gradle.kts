@@ -7,8 +7,10 @@ plugins {
 
 android {
     namespace = "com.example.finanzas_moviles"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    
+    // Cambia estas líneas dinámicas por valores fijos modernos
+    compileSdk = 34 
+    // ndkVersion = flutter.ndkVersion // Comenta esta línea si sigue fallando
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -16,16 +18,16 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17" // Simplificado
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.finanzas_moviles"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        
+        minSdk = 21 // Valor estándar para Flutter
+        targetSdk = 34 // Coincide con compileSdk
+        
+        // Estos sí déjalos dinámicos si quieres
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

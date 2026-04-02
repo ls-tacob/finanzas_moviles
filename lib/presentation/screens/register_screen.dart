@@ -166,8 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? "Las contraseñas no coinciden"
                     : null,
               ),
-              // --- CONTRASEÑAS (Igual a tu código) ---
-              // ...
+              
               const SizedBox(height: 30),
 
               // --- BOTÓN REGISTRARSE ACTUALIZADO ---
@@ -235,7 +234,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final success = await authRepo.registrarUsuario(
         newUser,
         _passController.text.trim(),
-        1,
+        2,
       );
 
       if (success && mounted) {

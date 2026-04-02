@@ -1,3 +1,4 @@
+import 'package:finanzas_moviles/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
 
@@ -75,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   TextButton(
                     onPressed: () => Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
                     ),
                     child: const Text("SALTAR"),
                   ),
