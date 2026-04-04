@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:finanzas_moviles/core/constants.dart';
 import 'package:http/http.dart' as http;
 
 class NewsService {
@@ -6,7 +7,7 @@ class NewsService {
   Future<List<dynamic>> getFinancialNews() async {
     try {
       final response = await http.get(
-        Uri.parse('https://saurav.tech/NewsAPI/top-headlines/category/business/us.json'),
+       Uri.parse(ApiEndpoints.newsApi),
         headers: {
           'User-Agent': 'Mozilla/5.0',
           'Content-Type': 'application/json',

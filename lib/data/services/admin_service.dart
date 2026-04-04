@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:finanzas_moviles/core/constants.dart';
-import 'package:http/http.dart' as http;
 import '../../domain/entities/user.dart';
 import '../../core/session_manager.dart';
 

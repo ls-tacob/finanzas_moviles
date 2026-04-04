@@ -1,5 +1,7 @@
+// lib/presentation/screens/home_screen.dart (ACTUALIZADO)
 import 'package:finanzas_moviles/data/services/auth_service.dart';
 import 'package:finanzas_moviles/presentation/screens/admin/admin_main_screen.dart';
+import 'package:finanzas_moviles/presentation/screens/budget/budgets_list_screen.dart';
 import 'package:finanzas_moviles/presentation/screens/user/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'register_gasto_screen.dart';
@@ -18,7 +20,6 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
-          // ✅ Botón Mi Perfil
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -29,7 +30,6 @@ class HomeScreen extends StatelessWidget {
             },
             tooltip: "Mi Perfil",
           ),
-          // Botón Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => Navigator.pushReplacement(
@@ -48,6 +48,17 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
+
+            // ✅ NUEVO BOTÓN: GESTIÓN DE PRESUPUESTOS
+            _menuButton(
+              context,
+              icon: Icons.account_balance_wallet,
+              label: "Mis Presupuestos",
+              screen: const BudgetsListScreen(),
+            ),
+
+            const SizedBox(height: 15),
+
             if (authService.currentUser?.idRol == 1)
               _menuButton(
                 context,

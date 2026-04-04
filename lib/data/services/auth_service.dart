@@ -1,3 +1,4 @@
+// lib/data/services/auth_service.dart
 import 'package:finanzas_moviles/domain/entities/user.dart';
 
 import '../repositories/auth_repository_impl.dart';
@@ -7,7 +8,7 @@ class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
-  
+
   final AuthRepositoryImpl _repository = AuthRepositoryImpl();
   final SessionManager _sessionManager = SessionManager();
 
@@ -17,7 +18,12 @@ class AuthService {
   // 2. Getter público para que la UI pueda leerlo
   UserModel? get currentUser => _currentUser;
 
-Future<bool> login(String correo, String password) async {
+  // ✅ NUEVO: Método para obtener el token (usa SessionManager)
+  Future<String?> getToken() async {
+    return await _sessionManager.getToken();
+  }
+
+  Future<bool> login(String correo, String password) async {
     try {
       final result = await _repository.validarLogin(correo, password);
 

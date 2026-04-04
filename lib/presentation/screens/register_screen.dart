@@ -54,14 +54,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _cedulaController,
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10), // Bloqueo físico en 10
+                ],
                 decoration: const InputDecoration(
                   labelText: "Cédula",
+                  hintText: "Ej: 1712345678",
                   icon: Icon(Icons.badge),
                 ),
-                validator: (val) => (val == null || val.length != 10)
-                    ? "10 dígitos requeridos"
-                    : null,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return "Campo obligatorio";
+                  if (val.length != 10) return "Debe tener 10 dígitos";
+                  if (!_isCedulaValida(val))
+                    return "La cédula no es válida en Ecuador";
+                  return null;
+                },
               ), // --- CAMPO NOMBRES ---
               TextFormField(
                 controller: _nombreController,
@@ -96,28 +104,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // ...
 
               // --- CORREO ---
-              TextFormField(
+             TextFormField(
                 controller: _correoController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: "Correo",
+                  labelText: "Correo Electrónico",
+                  hintText: "ejemplo@dominio.com",
                   icon: Icon(Icons.email),
                 ),
-                validator: (val) => (val == null || !val.contains('@'))
-                    ? "Correo inválido"
-                    : null,
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return "El correo es obligatorio";
+                  }
+
+                  // RegEx estándar para validación de email
+                  final emailRegExp = RegExp(
+                    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                  );
+
+                  if (!emailRegExp.hasMatch(val)) {
+                    return "Introduce un formato de correo válido";
+                  }
+
+                  return null;
+                },
               ),
 
               // --- NUEVO: TELÉFONO (Obligatorio en tu Backend) ---
-              TextFormField(
+             TextFormField(
                 controller: _telefonoController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 decoration: const InputDecoration(
+                  // <--- Inicia decoration
                   labelText: "Teléfono",
                   icon: Icon(Icons.phone),
-                ),
-                validator: (val) =>
-                    (val == null || val.isEmpty) ? "Campo obligatorio" : null,
+                ), // <--- AQUÍ debes cerrar el paréntesis de decoration
+                validator: (val) {
+                  // <--- Ahora validator está al mismo nivel que controller y decoration
+                  if (val == null || val.isEmpty) {
+                    return "Campo obligatorio";
+                  }
+                  if (val.length != 10) {
+                    return "El teléfono debe tener exactamente 10 dígitos";
+                  }
+                  return null;
+                },
               ),
 
               // --- NUEVO: PROFESIÓN (Opcional) ---
@@ -129,16 +164,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
 
-              // --- SUELDO ---
               TextFormField(
                 controller: _sueldoController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                // Esto es lo que realmente bloquea la entrada de texto no deseado
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
                 decoration: const InputDecoration(
                   labelText: "Sueldo Mensual",
-                  icon: Icon(Icons.attach_money),
+                  prefixText: "\$ ", // Mejor que solo un icono
+                  icon: Icon(Icons.money),
                 ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return "Ingresa un monto";
+                  if (double.tryParse(val) == null) return "Monto inválido";
+                  return null;
+                },
               ),
               // --- CAMPO CONTRASEÑA ---
               TextFormField(
@@ -146,11 +190,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: "Contraseña",
+                  helperText: "Mayúsculas, minúsculas, números y símbolos.",
                   icon: Icon(Icons.lock),
                 ),
-                validator: (val) => (val == null || val.length < 8)
-                    ? "Mínimo 8 caracteres"
-                    : null,
+                validator:
+                    _validatePassword, // Referencia a la función de arriba
               ),
               const SizedBox(height: 15),
 
@@ -258,5 +302,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+  String? _validatePassword(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'La contraseña es obligatoria';
+  }
+
+  // 1. Longitud mínima (8-10 caracteres mínimo)
+  if (value.length < 8) {
+    return 'Debe tener al menos 8 caracteres';
+  }
+
+  // 2. Validar complejidad con RegEx
+  // Contiene al menos una mayúscula
+  if (!value.contains(RegExp(r'[A-Z]'))) {
+    return 'Debe incluir al menos una mayúscula';
+  }
+
+  // Contiene al menos una minúscula
+  if (!value.contains(RegExp(r'[a-z]'))) {
+    return 'Debe incluir al menos una minúscula';
+  }
+
+  // Contiene al menos un número
+  if (!value.contains(RegExp(r'[0-9]'))) {
+    return 'Debe incluir al menos un número';
+  }
+
+  // Contiene al menos un carácter especial
+  if (!value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+    return 'Debe incluir un carácter especial (ej. @, #)';
+  }
+
+  return null; // Si pasa todo, es válida
+}
+bool _isCedulaValida(String cedula) {
+    if (cedula.length != 10) return false;
+
+    // Verificar provincia (primeros dos dígitos entre 01 y 24, o 30)
+    int provincia = int.parse(cedula.substring(0, 2));
+    if (!((provincia >= 1 && provincia <= 24) || provincia == 30)) return false;
+
+    // Verificar el tercer dígito (debe ser menor a 6 para personas naturales)
+    int tercerDigito = int.parse(cedula[2]);
+    if (tercerDigito >= 6) return false;
+
+    // Algoritmo de Luhn (Módulo 10) modificado para EC
+    List<int> coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    int suma = 0;
+
+    for (int i = 0; i < 9; i++) {
+      int valor = int.parse(cedula[i]) * coeficientes[i];
+      if (valor >= 10) valor -= 9;
+      suma += valor;
+    }
+
+    int verificadorObtenido = (suma % 10 == 0) ? 0 : 10 - (suma % 10);
+    int verificadorReal = int.parse(cedula[9]);
+
+    return verificadorObtenido == verificadorReal;
   }
 }
