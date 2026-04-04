@@ -1,8 +1,9 @@
 import 'package:finanzas_moviles/data/services/auth_service.dart';
 import 'package:finanzas_moviles/presentation/screens/admin/admin_main_screen.dart';
+import 'package:finanzas_moviles/presentation/screens/user/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'register_gasto_screen.dart';
-import 'opportunities_screen.dart'; // Importa la de oportunidades
+import 'opportunities_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -10,11 +11,25 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Rol del usuario logueado: ${authService.currentUser?.idRol}"); 
+    print("Rol del usuario logueado: ${authService.currentUser?.idRol}");
     return Scaffold(
       appBar: AppBar(
         title: const Text('Finanzas Móviles - Home'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
         actions: [
+          // ✅ Botón Mi Perfil
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            tooltip: "Mi Perfil",
+          ),
+          // Botón Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => Navigator.pushReplacement(
@@ -38,8 +53,7 @@ class HomeScreen extends StatelessWidget {
                 context,
                 icon: Icons.verified_user_sharp,
                 label: "Administración",
-                screen:
-                    const AdminMainScreen(), // Esta es la que crearemos ahora
+                screen: const AdminMainScreen(),
               ),
             const SizedBox(height: 15),
             _menuButton(
@@ -48,15 +62,12 @@ class HomeScreen extends StatelessWidget {
               label: "Nuevo Gasto",
               screen: const RegisterGastoScreen(),
             ),
-
             const SizedBox(height: 15),
-
-            // BOTÓN 2: OPORTUNIDADES (Donde te mandaba antes el login)
             _menuButton(
               context,
               icon: Icons.lightbulb,
               label: "Ver Oportunidades",
-              screen: OpportunitiesScreen(), // Asegúrate que esta clase exista
+              screen: OpportunitiesScreen(),
             ),
           ],
         ),
@@ -64,7 +75,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Widget reutilizable para no repetir código de botones
   Widget _menuButton(
     BuildContext context, {
     required IconData icon,

@@ -1,3 +1,4 @@
+import 'package:finanzas_moviles/presentation/screens/admin/admin_historical_users_screen.dart';
 import 'package:finanzas_moviles/presentation/screens/admin/admin_users_list_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,21 @@ class AdminMainScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AdminUsersListScreen(),
+                ),
+              );
+            },
+          ),
+          _adminOptionCard(
+            context,
+            title: "Histórico de Usuarios",
+            subtitle: "Ver usuarios eliminados e inactivos",
+            icon: Icons.history,
+            color: Colors.orange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminHistoricalUsersScreen(),
                 ),
               );
             },

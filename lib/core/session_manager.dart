@@ -21,11 +21,13 @@ class SessionManager {
   }
 
   // Obtener los datos del usuario
-  Future<UserModel?> getUser() async {
+Future<UserModel?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userStr = prefs.getString(_keyUser);
     if (userStr != null) {
-      return UserModel.fromJson(jsonDecode(userStr));
+      final userMap = jsonDecode(userStr);
+      print("🔍 getUser - userMap: $userMap"); // Debug
+      return UserModel.fromJson(userMap);
     }
     return null;
   }

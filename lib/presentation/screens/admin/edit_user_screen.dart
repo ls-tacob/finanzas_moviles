@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/session_manager.dart';
+import '../../../data/services/auth_service.dart';
 
 class EditUserScreen extends StatefulWidget {
-final Map<String, dynamic> userJson;
-  // Solo id y data, porque el token es responsabilidad del servicio/padre
+  final Map<String, dynamic> userJson;
   final Function(int id, Map<String, dynamic> data) onSave;
 
   const EditUserScreen({
@@ -17,54 +18,75 @@ final Map<String, dynamic> userJson;
 
 class _EditUserScreenState extends State<EditUserScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
 
-  // Controllers: Tabla Principal
+  bool _isAdmin = false;
+  bool _isLoading = true;
+
+  // Controllers
   late TextEditingController _cedulaController;
   late TextEditingController _nombresController;
   late TextEditingController _apellidosController;
-  late String _selectedEstado;
-  late int _selectedRol;
-
-  // Controllers: Tabla UserInfo (Datos de Gastos/Perfil)
-  late TextEditingController _edadController;
   late TextEditingController _correoController;
   late TextEditingController _telefonoController;
-  late TextEditingController _sueldoController;
   late TextEditingController _profesionController;
+  late TextEditingController _sueldoController;
+  late String _selectedEstado;
+  late int _selectedRol;
+  late String _selectedDellog;
 
   @override
   void initState() {
     super.initState();
+    _checkUserRole();
+    _initializeControllers();
+  }
+
+  void _checkUserRole() {
+    final currentUser = _authService.currentUser;
+    setState(() {
+      _isAdmin = currentUser?.idRol == 1;
+      _isLoading = false;
+    });
+  }
+
+  void _initializeControllers() {
     final user = widget.userJson;
     final info = user['info'] ?? {};
 
-    // Carga de datos iniciales
-    _cedulaController = TextEditingController(text: user['cedula']);
-    _nombresController = TextEditingController(text: user['nombres']);
-    _apellidosController = TextEditingController(text: user['apellidos']);
-    _selectedEstado = user['estado'] ?? 'A';
-    _selectedRol = user['idRol'] ?? 2;
-
-    _edadController = TextEditingController(
-      text: info['edad']?.toString() ?? '',
+    _cedulaController = TextEditingController(text: user['cedula'] ?? '');
+    _nombresController = TextEditingController(text: user['nombres'] ?? '');
+    _apellidosController = TextEditingController(text: user['apellidos'] ?? '');
+    _correoController = TextEditingController(
+      text: info['correo'] ?? user['correo'] ?? '',
     );
-    _correoController = TextEditingController(text: info['correo'] ?? '');
-    _telefonoController = TextEditingController(text: info['telefono'] ?? '');
+    _telefonoController = TextEditingController(
+      text: info['telefono'] ?? user['telefono'] ?? '',
+    );
+    _profesionController = TextEditingController(
+      text: info['profesion'] ?? user['profesion'] ?? '',
+    );
     _sueldoController = TextEditingController(
-      text: info['sueldoActual']?.toString() ?? '',
+      text: (info['sueldoActual'] ?? user['sueldo'] ?? 0).toString(),
     );
-    _profesionController = TextEditingController(text: info['profesion'] ?? '');
+    _selectedEstado = user['estado'] ?? 'A';
+    _selectedDellog = user['dellog'] ?? 'N';
+    _selectedRol = user['idRol'] ?? 2;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Gestión de Usuario",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          _isAdmin ? "Editar Usuario (Admin)" : "Mi Perfil",
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.blueGrey[900],
+        backgroundColor: _isAdmin ? Colors.blueGrey[900] : Colors.indigo,
         foregroundColor: Colors.white,
       ),
       body: Form(
@@ -72,8 +94,16 @@ class _EditUserScreenState extends State<EditUserScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            _buildHeader("DATOS DE ACCESO", Icons.lock_outline),
-            _buildField(_cedulaController, "Cédula de Identidad", Icons.badge),
+            _buildHeader("DATOS PERSONALES", Icons.person),
+
+            // Cédula SOLO para admin
+            _buildField(
+              _cedulaController,
+              "Cédula",
+              Icons.badge,
+              enabled: _isAdmin,
+            ),
+
             _buildField(_nombresController, "Nombres", Icons.person),
             _buildField(
               _apellidosController,
@@ -81,73 +111,56 @@ class _EditUserScreenState extends State<EditUserScreen> {
               Icons.person_outline,
             ),
 
-            Row(
-              children: [
-                Expanded(child: _buildRoleDropdown()),
-                const SizedBox(width: 12),
-                Expanded(child: _buildStatusDropdown()),
-              ],
-            ),
+            // Campos SOLO visibles para ADMIN
+            if (_isAdmin) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _buildRoleDropdown()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildStatusDropdown()),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildDellogDropdown(),
+            ],
 
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Divider(thickness: 1.2),
-            ),
-
-            _buildHeader(
-              "PERFIL FINANCIERO & CONTACTO",
-              Icons.account_balance_wallet_outlined,
-            ),
+            const SizedBox(height: 20),
+            _buildHeader("CONTACTO", Icons.contact_phone),
             _buildField(
               _correoController,
               "Correo Electrónico",
-              Icons.email_outlined,
+              Icons.email,
               type: TextInputType.emailAddress,
             ),
             _buildField(
               _telefonoController,
-              "Teléfono Móvil",
-              Icons.phone_android,
+              "Teléfono",
+              Icons.phone,
               type: TextInputType.phone,
             ),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildField(
-                    _edadController,
-                    "Edad",
-                    Icons.cake_outlined,
-                    type: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildField(
-                    _sueldoController,
-                    "Sueldo Mensual",
-                    Icons.monetization_on_outlined,
-                    type: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-
+            const SizedBox(height: 20),
+            _buildHeader("INFORMACIÓN FINANCIERA", Icons.attach_money),
+            _buildField(_profesionController, "Profesión", Icons.work),
             _buildField(
-              _profesionController,
-              "Profesión / Ocupación",
-              Icons.work_outline,
+              _sueldoController,
+              "Sueldo Mensual",
+              Icons.monetization_on,
+              type: TextInputType.number,
             ),
 
             const SizedBox(height: 40),
             ElevatedButton.icon(
               icon: const Icon(Icons.save_rounded, color: Colors.white),
-              label: const Text(
-                "GUARDAR ACTUALIZACIÓN",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              label: Text(
+                _isAdmin ? "GUARDAR CAMBIOS (Admin)" : "ACTUALIZAR MI PERFIL",
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent[700],
+                backgroundColor: _isAdmin
+                    ? Colors.blueAccent[700]
+                    : Colors.green,
                 minimumSize: const Size.fromHeight(55),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
@@ -155,14 +168,11 @@ class _EditUserScreenState extends State<EditUserScreen> {
               ),
               onPressed: _handleSave,
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
-
-  // --- Helpers de UI ---
 
   Widget _buildHeader(String text, IconData icon) {
     return Padding(
@@ -190,41 +200,55 @@ class _EditUserScreenState extends State<EditUserScreen> {
     String label,
     IconData icon, {
     TextInputType type = TextInputType.text,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: TextFormField(
         controller: controller,
         keyboardType: type,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, size: 20),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.grey[50],
+          fillColor: enabled ? Colors.grey[50] : Colors.grey[200],
         ),
+        validator: (value) =>
+            value == null || value.isEmpty ? "Campo requerido" : null,
       ),
     );
   }
 
   Widget _buildRoleDropdown() {
+    // Asegurar que _selectedRol tenga un valor válido
+    final validRol = (_selectedRol == 1 || _selectedRol == 2)
+        ? _selectedRol
+        : 2;
+
     return DropdownButtonFormField<int>(
-      value: _selectedRol,
+      value: validRol, // Usar valor validado
       decoration: InputDecoration(
         labelText: "Rol",
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       items: const [
-        DropdownMenuItem(value: 1, child: Text("Admin")),
+        DropdownMenuItem(value: 1, child: Text("Administrador")),
         DropdownMenuItem(value: 2, child: Text("Usuario")),
       ],
-      onChanged: (val) => setState(() => _selectedRol = val!),
+      onChanged: (val) => setState(() => _selectedRol = val ?? 2),
     );
   }
 
   Widget _buildStatusDropdown() {
+    // Asegurar que _selectedEstado tenga un valor válido
+    final validEstado = (_selectedEstado == 'A' || _selectedEstado == 'I')
+        ? _selectedEstado
+        : 'A';
+
     return DropdownButtonFormField<String>(
-      value: _selectedEstado,
+      value: validEstado, // Usar valor validado
       decoration: InputDecoration(
         labelText: "Estado",
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -233,32 +257,67 @@ class _EditUserScreenState extends State<EditUserScreen> {
         DropdownMenuItem(value: 'A', child: Text("Activo")),
         DropdownMenuItem(value: 'I', child: Text("Inactivo")),
       ],
-      onChanged: (val) => setState(() => _selectedEstado = val!),
+      onChanged: (val) => setState(() => _selectedEstado = val ?? 'A'),
     );
   }
 
-  // --- Lógica de Envío ---
+  Widget _buildDellogDropdown() {
+    // Asegurar que _selectedDellog tenga un valor válido
+    final validDellog = (_selectedDellog == 'N' || _selectedDellog == 'S')
+        ? _selectedDellog
+        : 'N';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: DropdownButtonFormField<String>(
+        value: validDellog, // Usar valor validado
+        decoration: InputDecoration(
+          labelText: "Borrado Lógico",
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        items: const [
+          DropdownMenuItem(value: 'N', child: Text("Activo (No eliminado)")),
+          DropdownMenuItem(value: 'S', child: Text("Eliminado")),
+        ],
+        onChanged: (val) => setState(() => _selectedDellog = val ?? 'N'),
+      ),
+    );
+  }
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
-      // Estructuramos el JSON exactamente como lo pide tu Service de NestJS
-      final payload = {
-        "cedula": _cedulaController.text,
+      final payload = <String, dynamic>{
         "nombres": _nombresController.text,
         "apellidos": _apellidosController.text,
-        "idRol": _selectedRol,
-        "estado": _selectedEstado,
         "info": {
-          // Objeto anidado para la tabla UserInfo
           "correo": _correoController.text,
           "telefono": _telefonoController.text,
-          "edad": int.tryParse(_edadController.text) ?? 0,
-          "sueldoActual": double.tryParse(_sueldoController.text) ?? 0.0,
           "profesion": _profesionController.text,
+          "sueldoActual": double.tryParse(_sueldoController.text) ?? 0.0,
         },
       };
 
+      // Solo admin puede enviar estos campos
+      if (_isAdmin) {
+        payload["cedula"] = _cedulaController.text;
+        payload["idRol"] = _selectedRol;
+        payload["estado"] = _selectedEstado;
+        payload["dellog"] = _selectedDellog;
+      }
+
       widget.onSave(widget.userJson['id'], payload);
     }
+  }
+
+  @override
+  void dispose() {
+    _cedulaController.dispose();
+    _nombresController.dispose();
+    _apellidosController.dispose();
+    _correoController.dispose();
+    _telefonoController.dispose();
+    _profesionController.dispose();
+    _sueldoController.dispose();
+    super.dispose();
   }
 }

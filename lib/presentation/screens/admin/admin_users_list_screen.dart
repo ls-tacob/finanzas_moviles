@@ -32,13 +32,16 @@ class _AdminUsersListScreenState extends State<AdminUsersListScreen> {
     _fetchUsers(); // Carga inicial
   }
 
-  Future<void> _fetchUsers() async {
+ Future<void> _fetchUsers() async {
     setState(() => _isLoading = true);
     try {
       final users = await _adminService.getAllUsers();
       setState(() {
-        _allUsers = users;
-        _filteredUsers = users;
+        // ✅ Solo usuarios ACTIVOS (NO eliminados Y estado Activo)
+        _allUsers = users
+            .where((user) => user.dellog == 'N' && user.estado == 'A')
+            .toList();
+        _filteredUsers = _allUsers;
         _isLoading = false;
       });
     } catch (e) {
@@ -70,7 +73,7 @@ class _AdminUsersListScreenState extends State<AdminUsersListScreen> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color.fromARGB(255, 34, 24, 24)),
                 decoration: const InputDecoration(
                   hintText: "Buscar por nombre o cédula...",
                   hintStyle: TextStyle(color: Color.fromARGB(179, 14, 2, 2)),
@@ -111,12 +114,9 @@ class _AdminUsersListScreenState extends State<AdminUsersListScreen> {
                     child: Text(user.nombres[0].toUpperCase()),
                   ),
                   title: Text("${user.nombres} ${user.apellidos}"),
-                  subtitle: Text(
-                    user.cedula,
-                  ), // Cambié a cédula para que sea útil en la lista
+                  subtitle: Text(user.cedula),
                   trailing: Row(
-                    mainAxisSize: MainAxisSize
-                        .min, // Vital para que no ocupe toda la pantalla
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // BOTÓN EDITAR
                       IconButton(
@@ -161,7 +161,6 @@ class _AdminUsersListScreenState extends State<AdminUsersListScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            // Dentro del botón de confirmación del diálogo:
             onPressed: () async {
               Navigator.pop(context);
               final success = await _adminService.deleteUser(user.id!);
@@ -185,40 +184,66 @@ class _AdminUsersListScreenState extends State<AdminUsersListScreen> {
     );
   }
 
-  // Dentro de tu _UserListScreenState
+// ✅ CÓMO DEBE QUEDAR (reconstruye el JSON con la estructura 'info')
+  void _navigateToEdit(UserModel user) async {
+    // Primero obtenemos los datos completos del usuario desde el backend
+    // para tener la estructura 'info' completa
+    final fullUserData = await _adminService.getUserById(user.id!);
 
-  void _navigateToEdit(Map<String, dynamic> user) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditUserScreen(
-          userJson: user,
+          userJson: fullUserData, // ← Pasamos el JSON completo con 'info'
           onSave: (id, data) async {
-            final success = await _adminService.patchUser(
-              id,
-              data,
-              miTokenGuardado,
+            // Mostrar loading
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
-            if (success) {
-              // Cerramos el Screen de Edición
+
+            try {
+              final success = await _adminService.updateUser(id, data);
+
+              // Cerrar loading
               if (mounted) Navigator.pop(context);
 
-              // Refrescamos la lista de la pantalla principal
-              _fetchUsers();
+              if (success) {
+                if (mounted) Navigator.pop(context);
+                _fetchUsers();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Usuario actualizado con éxito"),
+                  ),
+                );
+              }
+            } catch (e) {
+              // Cerrar loading
+              if (mounted) Navigator.pop(context);
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Usuario actualizado con éxito")),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Error al actualizar el usuario")),
-              );
+              final errorMsg = e.toString();
+              if (errorMsg.contains('CONFLICT:')) {
+                // Extraer mensaje amigable
+                final friendlyMsg = errorMsg.replaceFirst('CONFLICT:', '');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendlyMsg),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Error al actualizar el usuario"),
+                  ),
+                );
+              }
             }
           },
         ),
       ),
     );
   }
-
- 
 }
